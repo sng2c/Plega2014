@@ -2,14 +2,12 @@
 
 use v5.10;
 use strict;
-
 use Socket;
-use IO::Select;
 
 my $port = 9999;
 my $nickname = $ARGV[0];
 if( !$nickname ){
-	say "Nickname plz";
+	say "usage: perl udp_server.pl NICKNAME";
 	exit;
 }
 
@@ -19,15 +17,16 @@ my $dest = sockaddr_in( $port, INADDR_ANY);
 bind( SOCK, $dest );
 say "UDP $port Broadcast Receiver Started";
 
+use IO::Select;
 my $sel = IO::Select->new();
 $sel->add(\*STDIN);
 $sel->add(\*SOCK);
 
-system('perl','udp_client.pl',$nickname,"--> $nickname 님이 입장하셨습니다. <--");
+system('perl','udp_client.pl',$nickname,"--> $nickname 입장 <--");
 
 while( 1 ){
 
-	my @ready = $sel->can_read(1);
+	my @ready = $sel->can_read();
 
 	foreach my $r (@ready){
 		my $in;
@@ -41,17 +40,17 @@ while( 1 ){
 
 			my ($from_nick,$msg) = split(/\s+/, $in, 2);
 
-			if( $msg =~ /^\/who/ ){
-				system('perl','udp_client.pl',$nickname,"--> $nickname 님이 있습니다. <--");
+			if( $msg =~ /^\/ping/ ){
+				system('perl','udp_client.pl',$nickname,"/p $from_nick --> $nickname 있음 <--");
 			}
 			elsif( $msg =~ /^\/p / ){
-				my ($to_nick, $msg2) = split(/\s+/, $', 2);
+				my ($to_nick, $submsg) = split(/\s+/, $', 2);
 				if( $to_nick eq $nickname ){ # 내꺼일때만 보여준다.
-					say "[귓말] $from_nick : $msg2";
+					say "\t[귓말] $from_nick : $submsg";
 				}
 			}
 			else{
-				say "$from_nick : $msg";
+				say "\t$from_nick : $msg";
 			}
 		}
 		elsif( $r eq \*STDIN ){
@@ -64,4 +63,3 @@ while( 1 ){
 	
 	
 }
-

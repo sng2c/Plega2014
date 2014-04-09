@@ -1,214 +1,324 @@
-# Class1. UDP 클라이언트
+# Class2. UDP 채팅방
 
-## UDP?
+## Class1 에서의 구현내용
 
-* UDP는 네트워크 문제에 의한 전송실패시, 재전송해주는 기능이 없는 겁니다. 일방적으로 보내는겁니다.
-* 보내는 크기에 제한이 있습니다. 그래서 큰파일은 여러번 보낼 수 있는 형태로 보내야겠죠?
+### BROADCAST
 
-* TCP는 재전송을 해줍니다. UDP를 조합해서 재전송을 구현합니다. 
-* 재전송 기준을 잡기 위해서 이리저리 준비를 하는 과정을 HandShaking(악수) 라고 하는데
-* 이 HandShaking 중에 급 멈춰버리면, DOS 공격이 됩니다.
-* DOS는 UDP로 만들어 낼 수 있습니다.
+                                 |----> [SERVER1] IPADDR, PORT, "HELLO"
+    [CLIENT] ----> "HELLO" ----> |----> [SERVER2] IPADDR, PORT, "HELLO"
+                                 |----> [SERVER3] IPADDR, PORT, "HELLO"
+
+* CLIENT 가 "HELLO"를 브로드캐스트하면 각 서버들은 이를 받아서 IPADDR, PORT, "HELLO" 를 얻을 수 있었습니다.
+
+## UDP 채팅방의 요구사항
+
+* 채팅방에 누가 있는지 보여준다.
+* 채팅방에 누가 입장하는지 보여준다.
+* 닉네임을 설정할 수 있다.
+* 닉네임으로 귓말을 보낼 수 있다.
+* 전송할 내용의 입력을 채팅내용이 출력되는 곳에서 바로 한다.
+
 
 ## UDP 클라이언트 udp_client.pl
 
-    #!/usr/bin/env perl
-	
-    use v5.10;
-    
-	use Socket ;
+Class1 과 동일합니다.
 
-	my $text = join ' ', @ARGV;
+## Protocol 의 설계
 
-	my $port = 9999;
+### 채팅 전송
 
-	socket( SOCKET, PF_INET, SOCK_DGRAM, getprotobyname("udp") );
-
-	setsockopt( SOCKET, SOL_SOCKET, SO_BROADCAST, 1 );
-
-	my $dest = sockaddr_in( $port, INADDR_BROADCAST );
-
-	send( SOCKET, $text, 0,  $dest );
-    
-	close SOCKET;
+* 제가 정한 요구사항에서는 닉네임을 지정할 수 있어야 합니다.
+* 그리고 그 닉네임으로 귓말도 보낼 수 있어야 합니다.
+* 즉, "HELLO" 를 서버들에게 보낼 때, 닉네임이 함께 가야한다는 것을 의미합니다.
 
 
-### shebang 라인
+    [김현승] ----> "김현승 HELLO" ----> [변상필] IPADDR, PORT, "김현승", "HELLO"
 
-	#!/usr/bin/env perl
 
-* 유닉스 쉘에서는 첫 2바이트가 #! 로 되어있으면, 스크립트파일로 인식합니다.
-* 그리고 이 파일을 실행하면 #! 뒤의 실행파일에 이 파일의 경로를 넣어 실행합니다.
-* 이 첫줄을 shebang 라인이라고 부릅니다. sharp + bang 이겠죠?
-* /usr/bin/env perl에서 env명령은 현재사용자의 PATH들 중에서
-* 제일 먼저 만나는 perl을 찾아서 실행합니다.
-* 결과적으로 ./udp_client.pl 이라고 실행한 것은 
-* /usr/bin/perl udp_client.pl 을 실행한 것과 같습니다.
+* 위와 같이 모든 메세지의 앞에 자신의 닉네임을 붙여서 보내게 하고,
+* 모든 서버들은 첫번째 공백 앞은 닉네임, 뒤는 채팅내용으로 사용하게끔 합시다.
 
-### perl 최소버전의 선언
 
-	use v5.10;
+    "FROM_NICKNAME DATA"
 
-* 버전 5.10 이상일때만 작동한다고 표시했습니다. 
 
-### Socket 기능의 활성화
+* 받은 쪽에서는 FROM_NICKNAME과 DATA 를 보여주면 됩니다.
 
-	use Socket ;
+### 귓말 전송
 
-* Socket 모듈을 불러들입니다. 자바의 import와 비슷합니다.
+* 보내는 쪽에서는 DATA 부분에 특별한 표시를 더해서 보내도록 합시다. "/p 받을닉네임 귓말내용"
 
-### 커맨드라인의 입력값을 이용하기
 
-	my $text = join ' ', @ARGV;
+    [김현승] ----> "김현승 /p 변상필 HELLO" ----> [변상필] IPADDR, PORT, "김현승", "/p 변상필 HELLO"
 
-* @ARGV 를 ' ' 로 join 한 것을 $text 에 넣고 있습니다.
-* "./udp_client.pl 안녕하세요 여러분" 하면 
-* @ARGV = ("안녕하세요", "여러분"); 한것과 같습니다.
 
-### 도착지의 포트번호를 9999로 정하기
+* 기능이 더 추가 되었지만, 채팅 전송의 기본 단위는 변하지 않았습니다.
 
-    my $port = 9999;
 
-* 9999 를 $port 에 넣고 있습니다.
+    "FROM_NICKNAME [DATA]"
 
-### 소켓 파일핸들을 열기
+    는 아래와 같이 한번더 해석합니다.    
 
-    socket( SOCKET, PF_INET, SOCK_DGRAM, getprotobyname("udp") );
-	
-* UDP패킷을 만들어내기 위한 옵션 3가지를 넣고, SOCKET 이라는 파일핸들에 연결합니다.
-* 소켓은(네트워크 파일핸들)은 OS가 LAN카드에서 뽑아서 빌려줍니다.
-* 다 빌려주고 나면 더이상 못빌려 오겠죠? 랜카드 하나는 65536개를 가지고 있습니다.
-* 1000번대 밑으로는 root권한이 있어야 빌릴수 있습니다.
-* 그래서 아파치를 80에 띄우려면 root로 로그인해서 띄워야 합니다.
+    "FROM_NICKNAME [/p TO_NICKNAME SUBDATA]"
 
-#####파일 핸들이란?
-* 파일을 열때 파일핸들이 리턴되고 거기에다가 읽고 쓰고 하죠?
-* 소켓은 파일은 대신 랜카드를 연다고 생각하면 됩니다.
 
-### 브로드캐스트를 위한 옵션을 SOCKET에 설정하기
+* 받은 쪽에서는
+ * DATA 영역이 /p 로 시작하는 경우에만 귓말 데이터로 한번 더 해석하면 됩니다.
+ * TO_NICKNAME을 "자신의 NICKNAME과 같을 경우"에만 SUBDATA를 보여주면 됩니다.
 
-    setsockopt( SOCKET, SOL_SOCKET, SO_BROADCAST, 1 );
+### 방인원의 확인
 
-* SOCKET에다가 SO_BROADCAST 를 1로 설정하고 있습니다.
+* 귓말을 활용하여 이방의 인원을 확인해 보겠습니다.
+* 서버가 자동으로 응답할 ping 명령이 필요합니다.
+* 내가 ping을 보내면 받은 서버들이 자동으로 나에게 "있다"라고 귓말을 보내면 되겠죠? 
 
-### 도착지 주소를 조립하기
 
-    my $dest = sockaddr_in( $port, INADDR_BROADCAST );
+    [김현승] ----> "김현승 /ping"              ---->   [변상필] IPADDR, PORT, "김현승", "/ping"
+                                                       |
+                                                    (자동응답)
+                                                       |
+    [김현승] <---- "변상필 /p 김현승 변상필 있음"   <----   [변상필]
 
-* INADDR_BROADCAST 에 $port(9999) 를 합쳤습니다.
-* 보통은 INADDR_BROADCAST 대신 IP주소가 들어갑니다.
-* 브로드캐스트는 발신자와 같은 네트워크 내에 라우터(공유기)를 통해 모두 전달됩니다.
 
-### 소켓과 글자와 도착지를 조합해서 보내기
-
-	send( SOCKET, $text, 0,  $dest );
-
-* SOCKET 을 통해서
-* $text 를
-* $dest 로
-* 보내는 거죠.
-
-### 소켓을 잘 닫아주기
-
-	close SOCKET;
-
-* OS한테 빌린 소켓을 잘 돌려줘야 합니다.
+* 되돌아온 귓말의 형식을 잘 보세요. 
+* '변상필'이 나에게 자동으로 보낸 귓말 내용은 "변상필 있음" 입니다.
 
 ## UDP 서버 udp_server.pl
 
-	#!/usr/bin/env perl
+    #!/usr/bin/env perl
 
-	use v5.10;
+    use v5.10;
+    use strict;
+    use Socket;
 
-	use Socket;
+    my $port = 9999;
+    my $nickname = $ARGV[0];
+    if( !$nickname ){
+        say "usage: perl udp_server.pl NICKNAME";
+        exit;
+    }
 
-	my $port = 9999;
+    socket( SOCK, PF_INET, SOCK_DGRAM, getprotobyname('udp'));
+    setsockopt( SOCK, SOL_SOCKET, SO_BROADCAST, 1 );
+    my $dest = sockaddr_in( $port, INADDR_ANY);
+    bind( SOCK, $dest );
+    say "UDP $port Broadcast Receiver Started";
 
-	socket( SOCKET, PF_INET, SOCK_DGRAM, getprotobyname('udp'));
+    use IO::Select;
+    my $sel = IO::Select->new();
+    $sel->add(\*STDIN);
+    $sel->add(\*SOCK);
 
-	setsockopt( SOCKET, SOL_SOCKET, SO_BROADCAST, 1 );
+    system('perl','udp_client.pl',$nickname,"--> $nickname 입장 <--");
 
-	my $dest = sockaddr_in( $port, INADDR_ANY);
+    while( 1 ){
 
-	bind( SOCKET, $dest );
+        my @ready = $sel->can_read();
 
-	say "UDP $port Broadcast Receiver Started";
+        foreach my $r (@ready){
+            my $in;
 
-	my $in;
+            if( $r eq \*SOCK ){
+                my $from = recv( SOCK, $in, 4096, 0 );
+                chomp($in);
 
-	while( my $from = recv( SOCKET, $in, 4096, 0 ) ){
+                my ($fport,$faddr) = unpack_sockaddr_in($from);
+                my $ipaddr = inet_ntoa($faddr);
 
-		my ($fport,$faddr) = unpack_sockaddr_in($from);
+                my ($from_nick,$msg) = split(/\s+/, $in, 2);
 
-		my $ipaddr = inet_ntoa($faddr);
+                if( $msg =~ /^\/ping/ ){
+                    system('perl','udp_client.pl',$nickname,"/p $from_nick --> $nickname 있음 <--");
+                }
+                elsif( $msg =~ /^\/p / ){
+                    my ($to_nick, $submsg) = split(/\s+/, $', 2);
+                    if( $to_nick eq $nickname ){ # 내꺼일때만 보여준다.
+                        say "\t[귓말] $from_nick : $submsg";
+                    }
+                }
+                else{
+                    say "\t$from_nick : $msg";
+                }
+            }
+            elsif( $r eq \*STDIN ){
+                $in = <STDIN>;
+                chomp($in);
+                system('perl','udp_client.pl', $nickname, $in);
+            }
 
-		say "$ipaddr:$fport => $in";
-
-	}
-
-### 똑같은 부분은 생략합니다.
-
-	#!/usr/bin/env perl
-	
-	use v5.10;
-
-	use Socket;
-
-	my $port = 9999;
-
-	socket( SOCKET, PF_INET, SOCK_DGRAM, getprotobyname('udp'));
-	
-	setsockopt( SOCKET, SOL_SOCKET, SO_BROADCAST, 1 );
-
-### 도착지 주소를 만들기
-
-	my $src = sockaddr_in( $port, INADDR_ANY);
-
-* 내 주소와 $port 주소를 조합해서 도착지 주소를 만들고 있습니다.
-
-### 도착지 주소를 SOCKET 에 연결
-
-	bind( SOCKET, $src );
-
-* 아까는 send 에만 사용했는데, 이젠 9999포트에 bind를 시켰습니다.
-* 9999번 귀를 열겠다는 겁니다.
-
-### 로그를 찍어봅니다.
-
-	say "UDP $port Broadcast Receiver Started";
-
-* 5.10버전 부터는 print 대신 say를 쓸 수 있습니다.
-
-### 데이터를 받을 버퍼를 만듭니다.
-
-	my $in;
-
-### 무한 루프를 돕니다. 뭐하면서? recv 하면서~
-
-	while( my $from = recv( SOCKET, $in, 4096, 0 ) ){
-
-* SOCKET은 이제 9999번 포트를 들을 준비가 되었습니다.
-* SOCKET에서 $in 으로 4096 바이트만큼 읽겠다는 거지요?
-* $from는 보낸 사람의 주소가 되는데, while() 안에서는 결과적으로 참이 되어 계속 루프를 돕니다.
-* recv는 실제로 뭔가 읽어지기 전에는 멈춰있습니다.
-
-### $from에 뭐가 들었나 볼까요?
-
-		my ($fport,$faddr) = unpack_sockaddr_in($from);
-		my $ipaddr = inet_ntoa($faddr);
-
-* $from은 바이트 형태로 되어있어서 읽기가 어렵습니다.
-* 그래서 unpack_sockaddr_in 으로 $fport 와 $faddr 에 갈라넣고,
-* $faddr을 inet_ntoa를 이용하여 우리가 익숙한 192.168.0.X 형태로 바꿔줍니다.
+        }
+        
+        
+    }
 
 
-### 받은 값의 출력
-		say "$ipaddr:$fport => $in";
+### 닉네임을 명령행 인자로 받기
 
-	}
 
-* $in 에는 9999포트를 통해서 들어온 글자가 들어가 있겠지요?
-* 192.168.0.7:44953 => 하이요
-* 와 같은 형태로 출력됩니다.
+    my $nickname = $ARGV[0];
+    if( !$nickname ){
+        say "usage: perl udp_server.pl NICKNAME";
+        exit;
+    }
 
-### 아직 루프를 멈출방법이 따로 없으니 OS가 알아서 SOCKET을 잘 수거해가길 기도합시다.
+
+* @ARGV 에는 쉘에서 입력한 추가 인자들이 배열로 들어가 있습니다. "perl udp_server.pl 1 2 3" 하면 @ARGV = ("1","2","3"); 과 같습니다.
+* $ARGV[0] 은 @ARGV배열에서 첫번째 인자를 꺼내는 겁니다.
+* $nickname 이 옳지 않으면 (즉 공백이거나 undef상태이면) 
+ * 사용방법을 출력하고
+ * exit 함수로 실행을 종료합니다.
+
+### 받을 소켓의 생성
+
+
+    socket( SOCK, PF_INET, SOCK_DGRAM, getprotobyname('udp'));
+    setsockopt( SOCK, SOL_SOCKET, SO_BROADCAST, 1 );
+    my $dest = sockaddr_in( $port, INADDR_ANY);
+    bind( SOCK, $dest );
+    say "UDP $port Broadcast Receiver Started";
+
+
+* Class1과 동일합니다.
+
+### 소켓입력과 표준입력(키보드입력)을 함께 처리하기
+
+
+    use IO::Select;
+    my $sel = IO::Select->new();
+    $sel->add(\*STDIN);
+    $sel->add(\*SOCK);
+
+
+* IO::Select 는 여러개의 입출력을 쉽게 처리할수 있게 해주는 모듈입니다. Perl의 기본모듈입니다.
+* \\*STDIN 은 키보드입력을 의미합니다. (엄밀히는 표준입력)
+* \\*SOCKET 은 위에서 만들었던 받는 소켓이죠?
+* $sel 은 STDIN과 SOCKET, 이 두가지 입력을 모니터링 할 수 있게 되었습니다.
+
+### 입장 메세지의 자동 전송
+
+
+    system('perl','udp_client.pl',$nickname,"--> $nickname 입장 <--");
+
+
+* system 함수는 다른 프로그램을 실행시키는 기능을 가지고 있습니다.
+* 브로드캐스트하는 기능만을 가진 udp_client.pl 을 그대로 재사용해서 서버에서 브로드캐스트를 할수 있게 되었습니다.
+
+### 소켓과 키보드 입력의 대기
+
+
+    while( 1 ){
+
+        my @ready = $sel->can_read();
+
+        foreach my $r (@ready){
+            ...
+        }
+    }
+
+
+* Class1에서는 
+
+
+    while( my $from = recv( SOCK, $in, 4096, 0 ) ){ ... } 
+
+
+* 이라고 했었는데, 이렇게 하면 SOCK 만 체크합니다. 그러면 사용자의 입력인 STDIN은 처리할 기회가 없는거죠.
+* 그래서 이제는 $sel->can_read() 을 이용해서 STDIN과 SOCK을 함께 체크합니다.
+* @ready 에는 입력내용이 있는 파일핸들이 들어가게 되고, 이 파일핸들들을 처리해주면 됩니다.
+
+### 소켓과 키보드입력을 구분해서 처리해기
+
+
+        foreach my $r (@ready){
+
+
+* @ready 안에 있는 것을 하나씩 $r에 할당하여 루프를 돕니다.
+* $r 안에는 현재 읽을 수 있는 파일핸들이 하나씩 들어가게 됩니다.
+
+
+            my $in;
+
+            if( $r eq \*SOCK ){
+                my $from = recv( SOCK, $in, 4096, 0 );
+                chomp($in);
+
+                ... 받은 내용의 처리 ...
+            }
+
+
+* chomp 는 문자열의 마지막 개행문자를 제거해줍니다.
+* SOCK 으로 받은 것은 아래의 3가지 작동을 할 겁니다.
+ * /p 로 시작하면 내 닉네임과 같을때만 출력하기
+ * /ping 로 받았을때 자동으로 귓말을 보내기
+ * 이도 저도 아니면 그대로 출력하기
+
+
+            elsif( $r eq \*STDIN ){
+                $in = <STDIN>;
+                chomp($in);
+                system('perl','udp_client.pl', $nickname, $in);
+            }
+
+
+* <STDIN> 은 한줄씩 STDIN으로부터 가져옵니다.
+* 역시 chomp로 마지막 개행문자를 제거해줍니다.
+* 사용자가 입력한 것은 내 닉네임을 그 앞에 붙여 udp_client.pl을 이용하여 브로드캐스트로 보냅니다.
+
+
+        }
+
+### SOCK 입력의 처리
+
+                my $from = recv( SOCK, $in, 4096, 0 );
+                chomp($in);
+                my ($fport,$faddr) = unpack_sockaddr_in($from);
+                my $ipaddr = inet_ntoa($faddr);
+
+
+* Class1 에서도 $ipaddr과 $fport를 알아냈었죠?
+
+
+                my ($from_nick,$msg) = split(/\s+/, $in, 2);
+
+
+* 이번엔 $in 에서 닉네임과 메세지를 분리합니다.
+* \\s+ 는 공백들을 의미하고, 마지막 인자 2는 최대 2개로 분리하라는 것입니다. 즉 첫번째 \\s+ 를 기준으로 2개로 자릅니다.
+* $from_nick 과 $msg 에 각각 할당됩니다.
+
+
+                if( $msg =~ /^\/ping/ ){
+                    system('perl','udp_client.pl',$nickname,"/p $from_nick --> $nickname 있음 <--");
+                }
+
+
+* $msg가 /ping으로 시작하면, system 명령으로 귓말을 보내 자동응답합니다.
+* perl udp_client.pl '변상필' '/p 김현승 --> 변상필 있음 <--' 
+* 이라고 직접 실행하는 것과 같습니다.
+
+
+                elsif( $msg =~ /^\/p / ){
+                    my ($to_nick, $submsg) = split(/\s+/, $', 2);
+                    if( $to_nick eq $nickname ){ # 내꺼일때만 보여준다.
+                        say "\t[귓말] $from_nick : $submsg";
+                    }
+                }
+
+
+* $msg가 /p로 시작하면
+* 그 이후의 내용을 첫공백을 기준으로 잘라서, $to_nick 와 $submsg 에 할당합니다.
+* $to_nick 과 나의 닉네임이 같을때만 화면에 출력합니다.
+* $' 는 /p 매칭이후내용을 자동으로 담아두는 내장변수입니다.
+
+
+                else{
+                    say "\t$from_nick : $msg";
+                }
+
+
+* 이도 저도 아니면 내용을 그대로 출력합니다.
+
+## 두가지 보안 문제
+
+* 두사람 이상이 같은 닉네임을 사용하는 경우
+* $to_nick 과 내 닉네임을 비교하지 않게하여 모든 귓말을 보는 경우
+
