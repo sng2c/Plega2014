@@ -22,7 +22,7 @@ my $sel = IO::Select->new();
 $sel->add(\*STDIN);
 $sel->add(\*SOCK);
 
-system('perl','udp_client.pl',$nickname,"--> $nickname 입장 <--");
+system('perl','udp_client.pl',$nickname,">>> $nickname 입장 <<<");
 
 while( 1 ){
 
@@ -41,7 +41,7 @@ while( 1 ){
 			my ($from_nick,$msg) = split(/\s+/, $in, 2);
 
 			if( $msg =~ /^\/ping/ ){
-				system('perl','udp_client.pl',$nickname,"/p $from_nick --> $nickname 있음 <--");
+				system('perl','udp_client.pl',$nickname,"/p $from_nick >>> $nickname 있음 <<<");
 			}
 			elsif( $msg =~ /^\/p / ){
 				my ($to_nick, $submsg) = split(/\s+/, $', 2);
