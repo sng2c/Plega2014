@@ -7,8 +7,8 @@ use Socket ;
 
 my $filepath = $ARGV[0];
 open(FILE, $filepath);
-my $file;
-read(FILE, $file, (-s $filepath));
+my $data;
+read(FILE, $data, (-s $filepath));
 close(FILE);
 
 my $server_ip = $ARGV[1];
@@ -22,7 +22,7 @@ socket( SOCKET, PF_INET, SOCK_STREAM, (getprotobyname("tcp"))[2] );
 connect( SOCKET, $dest ) or die "Can't connect to port $port! \n";
 
 send( SOCKET, "FILENAME $filepath\n", 0 , $dest);
-send( SOCKET, $file, 0, $dest );
+send( SOCKET, $data, 0, $dest );
 send( SOCKET, "EOF\n", 0, $dest);
 
 close SOCKET;
