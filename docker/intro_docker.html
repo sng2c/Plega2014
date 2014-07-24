@@ -1,0 +1,152 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+ 
+<title>Introduction Docker</title>
+ 
+<meta name="description" content="Introduction Docker">    
+ 
+  <meta name="author" content="김현승" />
+ 
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+ 
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+ 
+<link rel="stylesheet" href="reveal.js/css/reveal.min.css">
+  <link rel="stylesheet" href="reveal.js/css/theme/night.css" id="theme">
+ 
+ 
+<!-- For syntax highlighting -->
+  <link rel="stylesheet" href="reveal.js/lib/css/zenburn.css">
+ 
+ 
+<!--[if lt IE 9]>
+<script src="reveal.js/lib/js/html5shiv.js"></script>
+<![endif]-->
+</head>
+ 
+<body>
+ 
+<div class="reveal">
+ 
+<!-- Any section element inside of this container is displayed as a slide -->
+<div class="slides">
+ 
+<section>
+<h1>Introduction Docker</h1>
+<h3>김현승</h3>
+<p>
+<h4>2014-07-24</h4>
+</p>
+</section>  
+ 
+ 
+<section id="docker" class="slide level2">
+<h1>Docker</h1>
+<p><img src="http://cdn-static.zdnet.com/i/story/70/00/031921/docker-acquires-london-startup-orchard-laboratories.png"></p>
+</section>
+<section id="docker의-가상화" class="slide level2">
+<h1>Docker의 가상화</h1>
+<ul>
+<li class="fragment roll-in">Docker는 가상화 프로그램이다.</li>
+<li class="fragment roll-in">OS를 새로까는 가상화가 아니다.</li>
+<li class="fragment roll-in">별도의 공간에 필요한 것들을 설치하고 관리한다.</li>
+</ul>
+</section>
+<section class="slide level2">
+
+<h3 id="컨테이너화">컨테이너화</h3>
+<ul>
+<li class="fragment roll-in">이런 것을 컨테이너화 한다고 한다.</li>
+<li class="fragment roll-in">프로그램 실행에 필요한 명령등을 별도의 공간에 놓는다.</li>
+<li class="fragment roll-in">그 공간안의 명령들만 이용하지만, 기존OS에서 실행된다.</li>
+</ul>
+</section>
+<section class="slide level2">
+
+<h3 id="왜-컨테이너를-쓰나">왜 컨테이너를 쓰나?</h3>
+<ul>
+<li class="fragment roll-in">OS수준의 가상화 단계가 없으므로 빠르다.</li>
+<li class="fragment roll-in">이미 가상화된 서버에서 사용가능하다.</li>
+<li class="fragment roll-in">OS에서 지원한다.</li>
+</ul>
+</section>
+<section class="slide level2">
+
+<h3 id="컨테이너가-있는데-왜-docker가-필요한가">컨테이너가 있는데 왜 Docker가 필요한가?</h3>
+<ul>
+<li class="fragment roll-in">Docker는 '별도의 공간'을 이미지파일로 관리한다.</li>
+<li class="fragment roll-in">이미지파일을 공유할수 있다.</li>
+<li class="fragment roll-in">다른 이미지파일을 '상속'할수 있다.</li>
+<li class="fragment roll-in">원격 컴퓨터에 있는 이미지나 컨테이너를 조작할 수 있다.</li>
+</ul>
+</section>
+<section class="slide level2">
+
+<h3 id="이미지파일의-상속">이미지파일의 상속?</h3>
+<ol type="1">
+<li class="fragment roll-in">'ubuntu' 이미지가 제공된다.</li>
+<li class="fragment roll-in">여기에다가 nginx 를 설치하고 'ubuntu-nginx' 로 저장한다.</li>
+<li class="fragment roll-in">'ubuntu-nginx' 이미지에 프로젝트파일을 복사하고 'myproject' 로 저장한다.</li>
+<li class="fragment roll-in">'myproject' 이미지를 지정해서 시작스크립트를 실행한다.</li>
+</ol>
+</section>
+<section class="slide level2">
+
+<h3 id="이미지파일의-공유">이미지파일의 공유</h3>
+<ul>
+<li class="fragment roll-in">https://hub.docker.com/</li>
+<li class="fragment roll-in">docker 명령으로 push를 하면 내 계정에 업로드 된다.</li>
+<li class="fragment roll-in">다른 사람이 만든 이미지를 pull하면 바로 사용할 수 있다.</li>
+</ul>
+</section>
+<section class="slide level2">
+
+<h3 id="docker-사용-데모">Docker 사용 데모</h3>
+<ul>
+<li class="fragment roll-in">OSX 나 윈도에서는, Linux커널을 공유하지 못하므로 VBOX를 이용하게 됩니다.</li>
+<li class="fragment roll-in">단 명령어만 OSX나 윈도에서 바로 쓸수 있게 해주는 겁니다.</li>
+<li class="fragment roll-in">헷갈리지 마세요.</li>
+<li class="fragment roll-in">Docker는 'Linux'의 컨테이너를 관리하는 프로그램입니다.</li>
+</ul>
+</section>
+</div>
+ 
+<script src="reveal.js/lib/js/head.min.js"></script>
+<script src="reveal.js/js/reveal.min.js"></script>
+ 
+<script>
+  // Full list of configuration options available here:
+  // https://github.com/hakimel/reveal.js#configuration
+  Reveal.initialize({
+    controls: true,
+    progress: true,
+    history: true,
+    center: false,
+    slideNumber: true,
+    fragments: true,
+ 
+  // available themes are in /css/theme
+      theme: Reveal.getQueryHash().theme || 'night', 
+   
+  // default/cube/page/concave/zoom/linear/fade/none
+      transition: Reveal.getQueryHash().transition || 'linear',
+   
+  // Optional libraries used to extend on reveal.js
+  dependencies: [
+    { src: 'reveal.js/lib/js/classList.js', condition: function() { return !document.body.classList; } },
+    { src: 'reveal.js/plugin/markdown/showdown.js', condition: function() { return !!document.querySelector( '[data-markdown]' ); } },
+    { src: 'reveal.js/plugin/markdown/markdown.js', condition: function() { return !!document.querySelector( '[data-markdown]' ); } },
+    { src: 'reveal.js/plugin/highlight/highlight.js', async: true, callback: function() { hljs.initHighlightingOnLoad(); } },
+    { src: 'reveal.js/plugin/zoom-js/zoom.js', async: true, condition: function() { return !!document.body.classList; } },
+    { src: 'reveal.js/plugin/notes/notes.js', async: true, condition: function() { return !!document.body.classList; } }
+    // { src: 'reveal.js/plugin/remotes/remotes.js', async: true, condition: function() { return !!document.body.classList; } }
+  ]
+  });
+ 
+</script>
+ 
+</body>
+</html>
